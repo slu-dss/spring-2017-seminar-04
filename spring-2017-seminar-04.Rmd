@@ -1,0 +1,239 @@
+---
+title: "Spring 2017, Seminar 03"
+author: "Christy Garcia"
+date: "7 Mar 2017"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+### Data
+Today, we'll use the same two data sources we used in the last session. The examples we'll discuss come from [fivethirtyeight.com](https://fivethirtyeight.com). The [data](https://github.com/fivethirtyeight/data) was originally used for [this article](https://fivethirtyeight.com/datalab/do-pulitzers-help-newspapers-keep-readers/) that investigated whether [Pulitzer Prizes](http://www.pulitzer.org) helped newspapers keep readers.
+
+```{r}
+prize <- read.csv("pulitzer-circulation-data.csv", stringsAsFactors = FALSE)
+```
+
+Pay close attention to the structure of the code above. We've assigned the data in the `csv` file to an object named `prize`. We use the `read.csv()` function to do this. You *must* place the filename in quotes
+
+Now, practice writing this code on the other dataset in the seminar's directory: `auto2016.csv`. These data come from the [U.S. Department of Energy](https://www.fueleconomy.gov/feg/download.shtml) and have been extensively cleaned by Chris. Name your dataframe `auto`:
+
+```{r}
+
+```
+
+### Dependencies
+
+We'll need the `psych` package for calculating descriptive statistics. You'll need to have installed this (and the `dplyr` and `ggplot2` packages) before executing this code. You can use the `install.packages()` function to install these if you have not already done so.
+
+```{r}
+library(psych)
+```
+
+We will also need the package `ggplot2`, which is used for creating plots, and the package `dplyr`, which is used for managing data:
+
+```{r}
+
+```
+
+Finally, we'll need the package `nortest` for assessing the normality of our data:
+
+```{r}
+
+```
+
+
+### Renaming Variables
+
+One thing you will hopefully notice quickly is that the variable names are much tidier in the `auto2016.csv` data than they are in the Pulitzer Prize data. We can use the `dplyr` package's `rename()` function to rename those variables:
+
+```{r}
+prize <- rename(prize, winFinal14 = Pulitzer.Prize.Winners.and.Finalists..2004.2014)
+prize <- rename(prize, name = Newspaper)
+prize <- rename(prize, circ2004 = Daily.Circulation..2004)
+prize <- rename(prize, circ2013 = Daily.Circulation..2013)
+prize <- rename(prize, circChange = Change.in.Daily.Circulation..2004.2013)
+prize <- rename(prize, winFinal03 = Pulitzer.Prize.Winners.and.Finalists..1990.2003)
+prize <- rename(prize, winFinalTot = Pulitzer.Prize.Winners.and.Finalists..1990.2014)
+```
+
+
+### Descriptive Plots
+There are two plots that we routinely use to evaluate the distribution of our variables - histograms and bar plots.
+
+#### Histograms
+
+The basic `ggplot` call requires the assignment of a dataframe and an asthetic variable in the first line to an object named `winFinal14`. The second line calls the specific type of plot we want to make as a "geom". In this case, we'll use the `geom_histogram()`. The `binwidth = val` can be adapted as needed to adjust the appearance of the plot. Note that we call the object `winFinal14` afterwards to display it.
+
+```{r}
+winFinal14 <- ggplot(prize, aes(x=winFinal14)) +
+  geom_histogram(binwidth = 5)
+winFinal14
+```
+
+Now try creating a histogram for the `mpgHwy` variable in the `auto` dataframe:
+
+```{r}
+
+```
+
+#### Bar Charts
+
+In this example, we assign our plot of the `auto` dataframes's `manual` variable to the `manual` object. We use the `geom_bar()` function to create a bar plot of these data, which indicate whether or not a vehicle has a manual transmission.
+
+```{r}
+manual <- ggplot(auto, aes(x=manual)) +
+  geom_bar()
+manual
+```
+
+Now try creating a bar plot of the `auto` dataframes's `drive` variable, which contains data on whether a vehicle is two wheel, four wheel, or all wheel drive:
+
+```{r}
+
+```
+
+#### Saving Plots
+We can use the `ggplot2` function `ggsave()` to save our plots:
+
+```{r}
+ggsave(file="winFinal14.png")
+```
+
+Since we are using a project, all of our data will be automatically saved into the project directory.
+
+Note that we save it as `png` file, which is a good choice for images to be placed in slides or other digital documents. Another common file format is as a `pdf` file.
+
+Now try writing code to export the other plots you've created:
+
+```{r}
+
+```
+
+
+#Getting Ready for Model Buliding 
+### Normality Testing
+One of the initial tasks for data analysis is ensuring that your dependent variable is normally distributed. Skew and kurtosis both serve as indicators of normality, but there are other ways we can assess normality.
+
+#### Hypothesis Testing
+We can use two common hypothesis tests - the Shapiro-Wilk and Shapiro-Francia tests. Shapiro-Wilk is valid for datasets with $3 \leq n < 3000$ observations. The Shapiro-Francia test is valid for datasets with $5 \leq n < 5000$ observations. 
+
+As an aside, we should point out that text placed between dollar signs in RNotebooks is treated as LaTeX syntax. This is an excellent choice for embedding mathmatic notation and formulas in your output.
+
+The Shapir-Wilk test uses the function `shapiro.test()` from the `stats` package and the Shair-Francia test uses the function `sf.test()` from the `nortest` package. They both have the same null hypothesis, which is that the variable in question is normally distributed. Each test's alternative hypothesis is that the data are *not* normally distributed.
+
+```{r}
+shapiro.test(prize$winFinal14)
+sf.test(prize$winFinal14)
+```
+
+In both cases, our test results are statistically significant (as evidenced by p-values that need scientific notation to be displayed!). We therefore reject the null and take on our alternative hypothesis that the variable is *not* normally distributed.
+
+Now try assessing the normality of the `mpgHwy` variable in the `auto` dataframe:
+
+```{r}
+
+```
+
+#### Q-Q Plot Using `nortest`
+
+We can use a quantile plot to confirm the results of our hypothesis tests. The quantile plot, or q-q plot for short, plots our given distribution (represented by the dots) against the normal distribution (represented by the line). 
+
+```{r}
+winFinal14_QQ <- qqnorm(prize$winFinal14); qqline(prize$winFinal14)
+```
+
+Now try assessing the normality of the `mpgHwy` variable in the `auto` dataframe:
+
+```{r}
+
+```
+
+#### Q-Q Plot in base R
+
+Another option is to create a Q-Q plot in base R without the need for any extra packages. 
+
+```{r}
+prize.qq = qqnorm(prize$winFinal14)$x
+qqline(prize$winFinal14)
+cor(prize$winFinal14,prize.qq)
+```
+
+Again, try assessing the normality of the `mpgHwy` variable in the `auto` dataframe using this other method:
+
+```{r}
+
+```
+
+#### Q-Q Plot using `ggplot2`
+
+Creating a q-q plot in `ggplot2` takes a bit more effort. You need to actually estimate the parameters that a q-q plot is based on:
+
+*  The parameter `y` is the range between the 25th percentile and the 75th percentile, also known as the interquartile range or IQR. 
+*  The parameter `x` contains the IQR of the normal distribution. 
+*  The parameter `slope` is the slope of the line on the plot
+*  The parameter `int` is the y-intercept of the line
+
+```{r}
+y     <- quantile(prize$winFinal14, c(0.25, 0.75))
+x     <- qnorm(c(0.25, 0.75))
+slope <- diff(y) / diff(x)
+int   <- y[1] - slope * x[1]
+```
+
+Once you have the parameters estimated, you can plot them using `ggplot2`:
+
+```{r}
+winFinal14_QQ2 <- ggplot(prize, aes(sample=winFinal14)) + 
+  stat_qq(distribution=qnorm) + 
+  geom_abline(intercept=int, slope=slope)
+winFinal14_QQ2
+```
+
+
+#### More descriptive stats
+#### Cross tabs 
+
+Apart from normality, it is also important to ensure there are enough tokens per cell when examining categorical variables. The function `xtabs` allows us to look at the various crossings of variables. We'll try this out with the `auto` dataset since it has a lot more variables than the `prize` dataset. 
+
+```{r}
+xtabs(~guzzler + classSimple, data=auto)
+```
+
+Now try out cross tabs with two other variables in the `auto` dataset.
+
+```{r}
+
+```
+
+
+#### t-test & chi-square
+
+Before taking the time to build a whole linear model, we can get a sense of the variables by looking at the results of t-tests and chi-squares. The function `t.test` will do both one-tailed and two-tailed t-tests. We'll use the auto data again to look at this. In order to look at two populations for the two-tailed t-test, we'll need to subset the data. 
+
+```{r}
+t.test(auto$mpgHwy)
+
+Honda <- subset(auto, mfrName=="Honda")
+BMW <- subset(auto, mfrName=="BMW")
+t.test(Honda$mpgHwy, BMW$mpgHwy)
+```
+
+Now do a one-tailed or two-tailed t-test with other variables in the `auto` dataset.
+
+```{r}
+
+```
+
+A quick chi-square lets us look at a categorical dependent variable (which we don't have in this dataset). The function in R is `chisq.test`.
+
+```{r}
+chisq.test(auto$mfrName, auto$airAspir)
+```
+
+Now do a chi-square with other variables in the `auto` dataset.
+
+```{r}
+
+```
+
